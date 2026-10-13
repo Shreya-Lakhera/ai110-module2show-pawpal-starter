@@ -1,94 +1,144 @@
-# PawPal+ (Module 2 Project)
+# PawPal+
 
-You are building **PawPal+**, a Streamlit app that helps a pet owner plan care tasks for their pet.
+PawPal+ is a Streamlit pet-care planning app. It stores an owner's pets and their care tasks, then helps organize tasks by date, time, priority, and available care minutes.
 
-## Scenario
+## Implemented Features
 
-A busy pet owner needs help staying consistent with pet care. They want an assistant that can:
+- Created an owner with an available-minute budget.
+- Added multiple pets, including pets with duplicate names.
+- Add tasks with descriptions, dates, zero-padded times, durations, priorities, and once/daily/weekly frequencies.
+- Validate names, descriptions, durations, priorities, frequencies, and times.
+- Edit incomplete tasks while preserving their IDs.
+- Sort and filter tasks across all pets.
+- Complete tasks and create the next occurrence for recurring tasks.
+- Detect exact same-date, same-time conflicts across pets.
+- Generate a greedy daily plan with selected and skipped tasks.
+- Use Streamlit session state for session-only data storage.
 
-- Track pet care tasks (walks, feeding, meds, enrichment, grooming, etc.)
-- Consider constraints (time available, priority, owner preferences)
-- Produce a daily plan and explain why it chose that plan
+## Setup on Windows PowerShell
 
-Your job is to design the system first (UML), then implement the logic in Python, then connect it to the Streamlit UI.
-
-## What you will build
-
-Your final app should:
-
-- Let a user enter basic owner + pet info
-- Let a user add/edit tasks (duration + priority at minimum)
-- Generate a daily schedule/plan based on constraints and priorities
-- Display the plan clearly (and ideally explain the reasoning)
-- Include tests for the most important scheduling behaviors
-
-## Getting started
-
-### Setup
-
-```bash
+```powershell
 python -m venv .venv
-source .venv/bin/activate  # Windows: .venv\Scripts\activate
-pip install -r requirements.txt
+.\.venv\Scripts\Activate.ps1
+python -m pip install -r requirements.txt
 ```
 
-### Suggested workflow
+If PowerShell blocks activation for the current terminal, use:
 
-1. Read the scenario carefully and identify requirements and edge cases.
-2. Draft a UML diagram (classes, attributes, methods, relationships).
-3. Convert UML into Python class stubs (no logic yet).
-4. Implement scheduling logic in small increments.
-5. Add tests to verify key behaviors.
-6. Connect your logic to the Streamlit UI in `app.py`.
-7. Refine UML so it matches what you actually built.
-
-## 🖥️ Sample Output
-
-Paste a sample of your app's CLI or Streamlit output here so a reader can see what a generated plan looks like:
-
-```
-# e.g.:
-# Daily plan for Biscuit (Golden Retriever):
-#   08:00 — Morning walk (30 min) [priority: high]
-#   09:00 — Feeding (10 min) [priority: high]
-#   ...
+```powershell
+Set-ExecutionPolicy -Scope Process -ExecutionPolicy RemoteSigned
 ```
 
-## 🧪 Testing PawPal+
+## Run PawPal+
 
-```bash
-# Run the full test suite:
-pytest
+Run the reproducible CLI demo:
 
-# Run with coverage:
-pytest --cov
+```powershell
+python main.py
 ```
 
-Sample test output:
+Run the Streamlit app:
 
+```powershell
+python -m streamlit run app.py
 ```
-# Paste your pytest output here
+
+Run the tests:
+
+```powershell
+python -m pytest
 ```
 
-## 📐 Smarter Scheduling
+## How the Classes Work Together
 
-> Fill in once you've implemented scheduling logic.
+`Owner` stores the owner settings and a list of `Pet` objects. Each `Pet` stores its own `Task` objects. `Owner.get_all_tasks()` provides `(pet, task)` pairs across every pet. `Scheduler` receives the owner and uses that aggregation for sorting, filtering, recurrence, conflict detection, and daily planning. `Task` validates its own data and tracks completion.
 
-| Feature | Method(s) | Notes |
-|---------|-----------|-------|
-| Task sorting | | e.g., by priority, duration |
-| Filtering | | e.g., skip tasks if time runs out |
-| Conflict handling | | e.g., overlapping time slots |
-| Recurring tasks | | e.g., daily vs. weekly |
+## Smarter Scheduling
 
-## 📸 Demo Walkthrough
+| Feature | Actual method | Behavior |
+|---|---|---|
+| Task sorting | `Scheduler.sort_by_time()` | Orders all tasks by due date and then time without changing pet task lists. |
+| Filtering | `Scheduler.filter_tasks()` | Filters by pet ID, completion status, and due date. |
+| Recurrence | `Scheduler.mark_task_complete()` | Completes the original task and creates one daily or weekly occurrence with a new ID. |
+| Conflict handling | `Scheduler.detect_conflicts()` | Reports incomplete tasks with the same exact date and start time, including across pets. |
+| Time-budget planning | `Scheduler.generate_daily_plan()` | Considers high, medium, then low priority tasks, skips tasks that do not fit, and returns selected and skipped lists. |
 
-Describe your app in numbered steps so a reader can follow along without watching a video:
+The conflict check compares exact start times; it does not calculate overlapping durations. The daily plan uses a greedy strategy, so it is not guaranteed to find the globally optimal combination of tasks.
 
-1. <!-- Describe this step -->
-2. <!-- Describe this step -->
-3. <!-- Describe this step -->
-4. <!-- Describe this step -->
-5. <!-- Add more steps as needed -->
+## Demo Walkthrough
 
-**Screenshot or video** *(optional)*: <!-- Insert a screenshot or link to a demo video here -->
+1. Open the Streamlit app and enter the owner's name and available care minutes.
+2. Add two pets, such as Mochi and Luna. Pets are tracked by unique IDs internally, so duplicate names would remain separate.
+3. Add tasks to either pet with descriptions, dates, times, durations, priorities, and frequencies.
+4. Review the chronological schedule and use the pet, completion-status, and date filters.
+5. When two incomplete tasks share a date and exact start time, review the warning displayed by the app.
+6. Select an incomplete task, edit its fields, and save the changes. Its task ID is preserved.
+7. Complete a daily or weekly task. The original becomes complete and its next occurrence appears as a new incomplete task.
+8. Choose a plan date and generate a daily plan. The app shows selected tasks, skipped tasks, the available-minute budget, and the selection explanation.
+
+## Sample Output
+
+This is the captured output from `python main.py`:
+
+```text
+Chronological sorting:
+  08:00 - Breakfast (10 min, medium, incomplete, 2026-10-13)
+  09:00 - Morning walk (20 min, high, incomplete, 2026-10-13)
+  09:00 - Medication (5 min, high, incomplete, 2026-10-13)
+  11:00 - Grooming (25 min, low, incomplete, 2026-10-13)
+
+Filters:
+  Luna tasks: Breakfast, Medication
+  Incomplete tasks: Morning walk, Grooming, Breakfast, Medication
+
+Conflicts:
+  Conflict on 2026-10-13 at 09:00: Mochi - Morning walk; Luna - Medication.
+
+Daily recurrence:
+  Mochi: 09:00 - Morning walk (20 min, high, complete, 2026-10-13)
+  Mochi: 11:00 - Grooming (25 min, low, incomplete, 2026-10-13)
+  Mochi: 09:00 - Morning walk (20 min, high, incomplete, 2026-10-14)
+
+Time-budget plan (35 minutes):
+  Selection rule: high priority first, then medium and low, then time; selected tasks are shown chronologically.
+  Selected:
+    Breakfast (10 min)
+    Medication (5 min)
+  Skipped because they exceed the remaining budget:
+    Grooming (25 min)
+```
+
+## Testing PawPal+
+
+Run the full suite with:
+
+```powershell
+python -m pytest
+```
+
+Captured result:
+
+```text
+============================= test session starts =============================
+platform win32 -- Python 3.10.11, pytest-9.1.1, pluggy-1.6.0
+rootdir: C:\Users\slakh\ai110-module2show-pawpal-starter
+plugins: anyio-4.15.1
+collected 24 items                                                              
+
+tests\test_pawpal.py ........................                            [100%]
+
+============================= 24 passed in 0.06s ==============================
+```
+
+The tests cover the original task completion and task-addition behaviors, chronological sorting, aggregation across two pets, all filters, daily and weekly recurrence, duplicate completion, one-time tasks, date-boundary recurrence, conflicts and conflict exclusions, empty collections, validation errors, identity-preserving edits, and priority-aware daily planning under a time budget.
+
+## Diagrams
+
+- [UML draft](diagrams/uml_draft.mmd)
+- [UML final](diagrams/uml_final.mmd)
+
+## Limitations
+
+- Data is stored in Streamlit `session_state` only. It remains available during the current session but is not permanent storage.
+- Conflict detection checks exact start times only and does not detect duration overlaps.
+- Daily planning is greedy: it prioritizes tasks and skips tasks that do not fit, but it is not globally optimal.

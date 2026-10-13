@@ -10,15 +10,15 @@
 
 **What task did you give the agent?**
 
-<!-- Describe the goal you asked the agent to accomplish -->
+I asked the agent to build PawPal+ incrementally: create the four-class design and UML skeleton, implement the backend and Streamlit UI, add tests, run the CLI demo and pytest, and finish the README/UML documentation using actual project output.
 
 **What did the agent do?**
 
-<!-- List the steps the agent took (files edited, commands run, etc.) -->
+The agent read the existing project files, created `pawpal_system.py` and `diagrams/uml_draft.mmd`, implemented validation, sorting, filtering, recurrence, conflicts, and daily planning, connected `app.py` to the backend with Streamlit forms and session state, created and expanded `tests/test_pawpal.py`, and ran `python main.py`, `python -m pytest`, and Python compilation checks. It then created `diagrams/uml_final.mmd` and updated the README with captured output.
 
 **What did you have to verify or fix manually?**
 
-<!-- Describe anything the agent got wrong or that required human review -->
+The test run initially found an incorrect expectation in the new daily-plan test: the scheduler chooses by priority but returns selected tasks chronologically. The test was corrected to assert those two behaviors separately. The final pytest run reported 24 passing tests. No browser verification was performed.
 
 ---
 
